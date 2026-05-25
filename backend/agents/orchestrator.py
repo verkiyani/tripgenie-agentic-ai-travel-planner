@@ -3,11 +3,58 @@ Simulated agent orchestrator — runs a short pipeline and builds the API respon
 No external APIs, database, or authentication.
 """
 
+import hashlib
+
 from schemas.trip import TripGenerateRequest
 
 
 def _step(agent: str, message: str, status: str = "completed") -> dict[str, str]:
     return {"agent": agent, "status": status, "message": message}
+
+
+def _confirmation_id(prefix: str, seed: str) -> str:
+    """Deterministic simulated confirmation number for demos."""
+    digest = hashlib.sha256(seed.encode()).hexdigest()[:8].upper()
+    return f"TG-{prefix}-{digest}"
+
+
+def _build_mock_confirmations(
+    destination: str,
+    hotel_cost: float,
+    transport_cost: float,
+    budget: float,
+) -> dict:
+    """
+    Simulated booking confirmations (hotel, flight, local transportation).
+    Costs align with budget breakdown where applicable; flight is a separate simulated fare.
+    """
+    city = destination.split(",")[0].strip()
+    seed_base = f"{destination}|{budget}"
+
+    flight_cost = round(min(budget * 0.35, budget - hotel_cost - transport_cost - 50), 2)
+    if flight_cost < 50:
+        flight_cost = round(budget * 0.25, 2)
+
+    return {
+        "hotel_confirmation": {
+            "provider_name": f"StayFinder — {city}",
+            "confirmation_id": _confirmation_id("HTL", seed_base + "|hotel"),
+            "status": "confirmed",
+            "estimated_cost": hotel_cost,
+        },
+        "flight_confirmation": {
+            "provider_name": "SkyRoute Airlines (simulated)",
+            "confirmation_id": _confirmation_id("FLT", seed_base + "|flight"),
+            "status": "confirmed",
+            "estimated_cost": flight_cost,
+        },
+        "transportation_confirmation": {
+            "provider_name": "CityTransit Pass (simulated)",
+            "confirmation_id": _confirmation_id("TRN", seed_base + "|transport"),
+            "status": "confirmed",
+            "estimated_cost": transport_cost,
+        },
+    }
 
 
 def _build_itinerary(destination: str, interests: str) -> dict[str, list[dict[str, str]]]:
@@ -118,6 +165,15 @@ def generate_trip_plan(request: TripGenerateRequest) -> dict:
         )
     )
 
+    # Booking simulation — mock holds for hotel, flight, and transportation
+    mock_confirmations = _build_mock_confirmations(normalized, hotel, transport, budget)
+    steps.append(
+        _step(
+            "Booking Agent",
+            "Simulated confirmations created for hotel, flight, and transportation.",
+        )
+    )
+
     steps.append(_step("Orchestrator", "Trip plan ready.", "completed"))
 
     trip_summary = {
@@ -132,4 +188,5 @@ def generate_trip_plan(request: TripGenerateRequest) -> dict:
         "itinerary": itinerary,
         "budget_breakdown": budget_breakdown,
         "agent_steps": steps,
+        "mock_confirmations": mock_confirmations,
     }
