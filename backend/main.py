@@ -1,6 +1,14 @@
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load OPENAI_API_KEY from backend/.env (works whether cwd is backend/ or repo root).
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routes.chat import router as chat_router
 from routes.trips import router as trips_router
 
 app = FastAPI(
@@ -18,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(trips_router)
+app.include_router(chat_router)
 
 @app.get("/")
 def root():
