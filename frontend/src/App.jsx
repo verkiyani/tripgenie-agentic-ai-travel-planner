@@ -18,9 +18,9 @@ import {
   X,
   Loader2,
   Bot,
-  CheckCircle2,
   Building2,
   Bus,
+  CheckCircle2,
 } from 'lucide-react'
 import { generateTripPlan } from './api/trips'
 import './index.css'
@@ -231,6 +231,10 @@ function App() {
 
   const days = useMemo(() => Object.keys(plan.itinerary ?? {}), [plan])
   const timeline = plan.itinerary?.[activeDay] ?? []
+  const agentSteps = useMemo(() => {
+    const steps = plan?.agent_steps
+    return Array.isArray(steps) ? steps : []
+  }, [plan])
 
   const summary = plan.trip_summary ?? {}
   const budgetData = plan.budget_breakdown ?? {}
@@ -257,7 +261,10 @@ function App() {
         travelers: form.travelers,
         interests: form.interests,
       })
-      setPlan(data)
+      setPlan({
+        ...data,
+        agent_steps: Array.isArray(data?.agent_steps) ? data.agent_steps : [],
+      })
       const firstDay = Object.keys(data.itinerary ?? {})[0]
       if (firstDay) setActiveDay(firstDay)
     } catch (err) {
@@ -380,6 +387,32 @@ function App() {
             </div>
           </section>
 
+          {agentSteps.length > 0 && (
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <Bot className="h-5 w-5 text-emerald-600" />
+                Agent Activity
+              </h2>
+              <ul className="space-y-3">
+                {agentSteps.map((step, idx) => (
+                  <li
+                    key={`${step.agent}-${idx}`}
+                    className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm"
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900">{step.agent}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 capitalize">Status: {step.status}</p>
+                      {step.message ? (
+                        <p className="text-sm text-slate-600 mt-1 leading-relaxed">{step.message}</p>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {plan.mock_confirmations && (
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -406,28 +439,6 @@ function App() {
                   booking={plan.mock_confirmations.transportation_confirmation}
                 />
               </div>
-            </section>
-          )}
-
-          {plan.agent_steps?.length > 0 && (
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Bot className="h-5 w-5 text-emerald-600" />
-                Agent workflow
-              </h2>
-              <ul className="space-y-3 max-h-56 overflow-y-auto">
-                {plan.agent_steps.map((step, idx) => (
-                  <li key={`${step.agent}-${idx}`} className="flex gap-3 text-sm border-l-2 border-emerald-200 pl-3">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-800">{step.agent}</span>
-                      <span className="text-slate-400 mx-1">·</span>
-                      <span className="text-slate-500">{step.status}</span>
-                      <p className="text-slate-600 mt-0.5">{step.message}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
             </section>
           )}
 
