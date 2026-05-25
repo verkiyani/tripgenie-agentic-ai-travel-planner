@@ -36,50 +36,50 @@ const NAV_ITEMS = [
 ]
 
 const DEFAULT_FORM = {
-  destination: 'New York, USA',
-  budget: 800,
-  travelers: '1 Adult',
-  interests: 'Museums, Local Food',
+  destination: 'San Francisco, CA',
+  budget: 1200,
+  travelers: '2 Adults',
+  interests: 'Art, Seafood & Wine',
 }
 
-/** Static demo until the user generates a trip via the API */
+/** Sample plan shown before the first API generate */
 const INITIAL_PLAN = {
   trip_summary: {
-    destination: 'New York, USA',
-    budget: 800,
-    travelers: '1 Adult',
-    interests: 'Museums, Local Food',
+    destination: 'San Francisco, CA',
+    budget: 1200,
+    travelers: '2 Adults',
+    interests: 'Art, Seafood & Wine',
   },
   itinerary: {
     'Day 1': [
-      { time: '09:00 AM', title: 'Arrival at JFK Airport' },
-      { time: '11:00 AM', title: 'Hotel Check-in' },
-      { time: '01:00 PM', title: 'Lunch at Local Restaurant' },
-      { time: '03:30 PM', title: 'The Metropolitan Museum' },
-      { time: '07:00 PM', title: 'Dinner in Times Square' },
+      { time: '10:00 AM', title: 'Arrival at SFO — AirTrain to city' },
+      { time: '12:30 PM', title: 'Check-in near Union Square' },
+      { time: '02:00 PM', title: 'Ferry Building & waterfront lunch' },
+      { time: '04:30 PM', title: 'SFMOMA visit' },
+      { time: '07:30 PM', title: 'Dinner in North Beach' },
     ],
     'Day 2': [
-      { time: '09:30 AM', title: 'Central Park Walk' },
-      { time: '12:00 PM', title: 'Lunch in Greenwich Village' },
-      { time: '02:00 PM', title: 'MoMA Visit' },
-      { time: '06:30 PM', title: 'Evening in Midtown' },
+      { time: '09:00 AM', title: 'Golden Gate Bridge viewpoints' },
+      { time: '12:00 PM', title: 'Seafood lunch at Fisherman\'s Wharf' },
+      { time: '03:00 PM', title: 'Exploratorium or Alcatraz cruise' },
+      { time: '07:00 PM', title: 'Sunset at Lands End' },
     ],
     'Day 3': [
-      { time: '10:00 AM', title: 'Brooklyn Bridge & DUMBO' },
-      { time: '01:00 PM', title: 'Local Food Tour' },
-      { time: '04:00 PM', title: 'Statue of Liberty Ferry' },
-      { time: '08:00 PM', title: 'Dinner — Little Italy' },
+      { time: '10:00 AM', title: 'Mission District murals & café' },
+      { time: '01:00 PM', title: 'Wine tasting — Sonoma day trip (optional)' },
+      { time: '05:00 PM', title: 'Hotel check-out' },
+      { time: '08:00 PM', title: 'Departure from SFO' },
     ],
   },
   budget_breakdown: {
-    budget: 800,
-    total_cost: 760,
-    remaining: 40,
+    budget: 1200,
+    total_cost: 1140,
+    remaining: 60,
     items: [
-      { category: 'Accommodation', amount: 320 },
-      { category: 'Transportation', amount: 96 },
-      { category: 'Meals', amount: 224 },
-      { category: 'Activities', amount: 120 },
+      { category: 'Accommodation', amount: 504 },
+      { category: 'Transportation', amount: 144 },
+      { category: 'Meals', amount: 336 },
+      { category: 'Activities', amount: 156 },
     ],
   },
   agent_steps: [],
@@ -88,32 +88,35 @@ const INITIAL_PLAN = {
 /** Single simulated booking block from API mock_confirmations */
 function BookingBlock({ title, icon: Icon, booking }) {
   if (!booking) return null
-  const statusClass =
-    booking.status === 'confirmed'
-      ? 'bg-emerald-100 text-emerald-800'
-      : 'bg-slate-100 text-slate-700'
+  const confirmed = booking.status === 'confirmed'
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-100 text-emerald-600">
-          <Icon className="h-4 w-4" />
+    <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+      <div className="flex items-start gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-700 ring-1 ring-emerald-100">
+          <Icon className="h-5 w-5" strokeWidth={2} />
         </div>
-        <span className="text-sm font-semibold text-slate-900">{title}</span>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+          <p className="text-sm font-semibold text-slate-900 mt-0.5 leading-snug">{booking.provider_name}</p>
+        </div>
       </div>
-      <dl className="space-y-2 text-sm">
+      <dl className="space-y-3 text-sm flex-1">
         <div>
-          <dt className="text-xs font-medium text-slate-500">Provider</dt>
-          <dd className="text-slate-900">{booking.provider_name}</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Confirmation ID</dt>
+          <dd className="font-mono text-xs text-slate-800 break-all mt-1 bg-slate-50 rounded-md px-2 py-1.5 border border-slate-100">
+            {booking.confirmation_id}
+          </dd>
         </div>
         <div>
-          <dt className="text-xs font-medium text-slate-500">Confirmation ID</dt>
-          <dd className="font-mono text-xs text-slate-800 break-all">{booking.confirmation_id}</dd>
-        </div>
-        <div>
-          <dt className="text-xs font-medium text-slate-500">Status</dt>
-          <dd>
-            <span className={`inline-block mt-0.5 text-xs font-medium px-2.5 py-0.5 rounded-full capitalize ${statusClass}`}>
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Status</dt>
+          <dd className="mt-1">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${
+                confirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {confirmed && <CheckCircle2 className="h-3.5 w-3.5" />}
               {booking.status}
             </span>
           </dd>
@@ -293,49 +296,52 @@ function App() {
         setForm={setForm}
       />
 
-      <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-2.5 px-5 py-6 border-b border-slate-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
+      <aside className="hidden lg:flex w-[17rem] shrink-0 flex-col border-r border-slate-200 bg-white">
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-100">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20">
             <Plane className="h-5 w-5" strokeWidth={2.25} />
           </div>
-          <div>
-            <p className="text-lg font-bold tracking-tight text-slate-900">TripGenie</p>
-            <p className="text-xs text-slate-500">AI Travel Planner</p>
+          <div className="min-w-0 leading-tight">
+            <p className="text-[17px] font-bold tracking-tight text-slate-900">TripGenie</p>
+            <p className="text-[11px] font-medium text-slate-500 mt-0.5">AI Travel Planner</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <nav className="flex-1 px-4 py-5 flex flex-col gap-1">
           {NAV_ITEMS.map(({ id, label, icon: Icon, highlight, active }) => (
             <button
               key={id}
               type="button"
               onClick={id === 'new-trip' ? () => setModalOpen(true) : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150 ${
                 highlight
-                  ? 'mt-1 mb-3 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                  ? 'mb-2 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:shadow'
                   : active
-                    ? 'bg-emerald-50 text-emerald-800'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-100'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" size={18} />
-              {label}
-              {active && !highlight && <ChevronRight className="ml-auto h-4 w-4 text-emerald-600" />}
+              <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
+              <span className="truncate">{label}</span>
+              {active && !highlight && <ChevronRight className="ml-auto h-4 w-4 text-emerald-600 shrink-0" />}
             </button>
           ))}
         </nav>
 
-        <div className="px-4 py-4 border-t border-slate-100">
-          <p className="text-xs text-slate-400 text-center">Connected to FastAPI</p>
+        <div className="px-5 py-4 border-t border-slate-100">
+          <p className="text-[11px] text-slate-400 text-center font-medium">Capstone demo · Agentic planning</p>
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-            <Plane className="h-4 w-4" />
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+            <Plane className="h-4 w-4" strokeWidth={2.25} />
           </div>
-          <span className="font-bold text-slate-900">TripGenie</span>
+          <div className="leading-tight">
+            <span className="font-bold text-slate-900 text-sm">TripGenie</span>
+            <p className="text-[10px] text-slate-500 font-medium">Travel Planner</p>
+          </div>
         </div>
         <button
           type="button"
@@ -389,40 +395,56 @@ function App() {
 
           {agentSteps.length > 0 && (
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
                 <Bot className="h-5 w-5 text-emerald-600" />
                 Agent Activity
               </h2>
-              <ul className="space-y-3">
-                {agentSteps.map((step, idx) => (
-                  <li
-                    key={`${step.agent}-${idx}`}
-                    className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm"
-                  >
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900">{step.agent}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 capitalize">Status: {step.status}</p>
-                      {step.message ? (
-                        <p className="text-sm text-slate-600 mt-1 leading-relaxed">{step.message}</p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
+              <p className="text-sm text-slate-500 mb-5">Simulated multi-agent pipeline for this trip plan.</p>
+              <ul className="space-y-4">
+                {agentSteps.map((step, idx) => {
+                  const done = step.status === 'completed'
+                  return (
+                    <li
+                      key={`${step.agent}-${idx}`}
+                      className="flex gap-3.5 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3.5 text-sm shadow-sm"
+                    >
+                      <CheckCircle2
+                        className={`h-5 w-5 shrink-0 mt-0.5 ${done ? 'text-emerald-600' : 'text-slate-300'}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-slate-900">{step.agent}</p>
+                          <span
+                            className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${
+                              done
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-50 text-amber-800'
+                            }`}
+                          >
+                            {step.status}
+                          </span>
+                        </div>
+                        {step.message ? (
+                          <p className="text-sm text-slate-600 mt-2 leading-relaxed">{step.message}</p>
+                        ) : null}
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             </section>
           )}
 
           {plan.mock_confirmations && (
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900 mb-1 flex items-center gap-2">
                 <CalendarCheck className="h-5 w-5 text-emerald-600" />
                 Booking summary
               </h2>
-              <p className="text-sm text-slate-500 mb-4">
-                Simulated holds from the trip generation API — not real reservations.
+              <p className="text-sm text-slate-500 mb-5">
+                Simulated confirmations for hotel, flight, and local transportation.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <BookingBlock
                   title="Hotel"
                   icon={Building2}
@@ -534,9 +556,10 @@ function App() {
                 Why this itinerary?
               </h2>
               <p className="text-sm text-emerald-900/90 leading-relaxed">
-                TripGenie simulated agents built this plan for <strong>{summary.interests}</strong> within a{' '}
-                <strong>${Math.round(budget)}</strong> budget for <strong>{summary.travelers}</strong>.
-                Use <strong>New Trip</strong> to regenerate from the API.
+                This itinerary balances <strong>{summary.interests}</strong> with your{' '}
+                <strong>${Math.round(budget).toLocaleString()}</strong> budget for{' '}
+                <strong>{summary.travelers}</strong>. Agents optimized routing, spend, and pacing for{' '}
+                <strong>{summary.destination}</strong>.
               </p>
             </section>
           </div>
