@@ -19,6 +19,8 @@ import {
   Loader2,
   Bot,
   CheckCircle2,
+  Building2,
+  Bus,
 } from 'lucide-react'
 import { generateTripPlan } from './api/trips'
 import './index.css'
@@ -81,6 +83,44 @@ const INITIAL_PLAN = {
     ],
   },
   agent_steps: [],
+}
+
+/** Single simulated booking block from API mock_confirmations */
+function BookingBlock({ title, icon: Icon, booking }) {
+  if (!booking) return null
+  const statusClass =
+    booking.status === 'confirmed'
+      ? 'bg-emerald-100 text-emerald-800'
+      : 'bg-slate-100 text-slate-700'
+
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-100 text-emerald-600">
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-semibold text-slate-900">{title}</span>
+      </div>
+      <dl className="space-y-2 text-sm">
+        <div>
+          <dt className="text-xs font-medium text-slate-500">Provider</dt>
+          <dd className="text-slate-900">{booking.provider_name}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium text-slate-500">Confirmation ID</dt>
+          <dd className="font-mono text-xs text-slate-800 break-all">{booking.confirmation_id}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium text-slate-500">Status</dt>
+          <dd>
+            <span className={`inline-block mt-0.5 text-xs font-medium px-2.5 py-0.5 rounded-full capitalize ${statusClass}`}>
+              {booking.status}
+            </span>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  )
 }
 
 function NewTripModal({ open, onClose, onSubmit, loading, form, setForm }) {
@@ -339,6 +379,35 @@ function App() {
               ))}
             </div>
           </section>
+
+          {plan.mock_confirmations && (
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <CalendarCheck className="h-5 w-5 text-emerald-600" />
+                Booking summary
+              </h2>
+              <p className="text-sm text-slate-500 mb-4">
+                Simulated holds from the trip generation API — not real reservations.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <BookingBlock
+                  title="Hotel"
+                  icon={Building2}
+                  booking={plan.mock_confirmations.hotel_confirmation}
+                />
+                <BookingBlock
+                  title="Flight"
+                  icon={Plane}
+                  booking={plan.mock_confirmations.flight_confirmation}
+                />
+                <BookingBlock
+                  title="Transportation"
+                  icon={Bus}
+                  booking={plan.mock_confirmations.transportation_confirmation}
+                />
+              </div>
+            </section>
+          )}
 
           {plan.agent_steps?.length > 0 && (
             <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
