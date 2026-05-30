@@ -23,11 +23,12 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { generateTripPlan } from './api/trips'
+import ChatAssistant from './ChatAssistant'
 import './index.css'
 
 const NAV_ITEMS = [
   { id: 'new-trip', label: 'New Trip', icon: Plus, highlight: true },
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, active: true },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'itinerary', label: 'Itinerary', icon: Map },
   { id: 'chat', label: 'Chat Assistant', icon: MessageCircle },
   { id: 'favorites', label: 'Favorites', icon: Heart },
@@ -225,6 +226,7 @@ function NewTripModal({ open, onClose, onSubmit, loading, form, setForm }) {
 }
 
 function App() {
+  const [currentView, setCurrentView] = useState('dashboard')
   const [plan, setPlan] = useState(INITIAL_PLAN)
   const [activeDay, setActiveDay] = useState('Day 1')
   const [modalOpen, setModalOpen] = useState(false)
@@ -308,24 +310,37 @@ function App() {
         </div>
 
         <nav className="flex-1 px-4 py-5 flex flex-col gap-1">
-          {NAV_ITEMS.map(({ id, label, icon: Icon, highlight, active }) => (
+          {NAV_ITEMS.map(({ id, label, icon: Icon, highlight }) => {
+            const isActive =
+              !highlight &&
+              ((id === 'dashboard' && currentView === 'dashboard') ||
+                (id === 'chat' && currentView === 'chat'))
+
+            const handleNav = () => {
+              if (id === 'new-trip') setModalOpen(true)
+              else if (id === 'dashboard') setCurrentView('dashboard')
+              else if (id === 'chat') setCurrentView('chat')
+            }
+
+            return (
             <button
               key={id}
               type="button"
-              onClick={id === 'new-trip' ? () => setModalOpen(true) : undefined}
+              onClick={handleNav}
               className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150 ${
                 highlight
                   ? 'mb-2 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:shadow'
-                  : active
+                  : isActive
                     ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-100'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
               <span className="truncate">{label}</span>
-              {active && !highlight && <ChevronRight className="ml-auto h-4 w-4 text-emerald-600 shrink-0" />}
+              {isActive && <ChevronRight className="ml-auto h-4 w-4 text-emerald-600 shrink-0" />}
             </button>
-          ))}
+            )
+          })}
         </nav>
 
         <div className="px-5 py-4 border-t border-slate-100">
@@ -353,6 +368,10 @@ function App() {
       </div>
 
       <main className="flex-1 min-w-0 overflow-y-auto pt-16 lg:pt-0 relative">
+        {currentView === 'chat' ? (
+          <ChatAssistant />
+        ) : (
+          <>
         {loading && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
             <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
@@ -564,6 +583,8 @@ function App() {
             </section>
           </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   )
