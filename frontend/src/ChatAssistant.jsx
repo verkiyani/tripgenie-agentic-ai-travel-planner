@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
-const THINKING_REPLY = 'TripGenie is thinking...'
-const THINKING_DELAY_MS = 900
+
+//const THINKING_REPLY = 'TripGenie is thinking...'
+//const THINKING_DELAY_MS = 900
 
 /**
  * Local-only chat UI (backend wiring comes later).
@@ -23,23 +25,59 @@ export default function ChatAssistant() {
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isWaiting])
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault()
+  
     const text = input.trim()
     if (!text || isWaiting) return
-
-    const userMsg = { id: `user-${Date.now()}`, role: 'user', text }
+  
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text,
+    }
+  
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setIsWaiting(true)
-
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { id: `assistant-${Date.now()}`, role: 'assistant', text: THINKING_REPLY },
-      ])
+  
+    try {
+      const response = await fetch('http://localhost:8000/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+        }),
+      })
+  
+      if (!response.ok) {
+        throw new Error('Chat API failed')
+      }
+  
+      const data = await response.json()
+  
+      const assistantMsg = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        text: data.reply || 'TripGenie could not generate a response.',
+      }
+  
+      setMessages((prev) => [...prev, assistantMsg])
+    } catch (error) {
+      console.error('Chat API error:', error)
+  
+      const errorMsg = {
+        id: `assistant-error-${Date.now()}`,
+        role: 'assistant',
+        text: 'Sorry, TripGenie could not respond right now. Please try again.',
+      }
+  
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
       setIsWaiting(false)
-    }, THINKING_DELAY_MS)
+    }
   }
 
   return (
@@ -51,7 +89,7 @@ export default function ChatAssistant() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Chat Assistant</h1>
-            <p className="text-sm text-slate-500">Travel planning help · local demo mode</p>
+            <p className="text-sm text-slate-500">Travel planning help · connected to AI backend</p>
           </div>
         </div>
       </header>
@@ -83,7 +121,13 @@ export default function ChatAssistant() {
                     : 'bg-slate-100 text-slate-800 rounded-tl-md border border-slate-100'
                 }`}
               >
-                {msg.text}
+                {
+                 msg.role === 'assistant' ? (
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                ) : (
+                  msg.text
+                )
+                }
               </div>
             </li>
           ))}
