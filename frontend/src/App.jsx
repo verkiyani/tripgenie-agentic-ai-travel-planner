@@ -233,6 +233,7 @@ function App() {
   const [form, setForm] = useState(DEFAULT_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [tripContext, setTripContext] = useState(null)
 
   const days = useMemo(() => Object.keys(plan.itinerary ?? {}), [plan])
   const timeline = plan.itinerary?.[activeDay] ?? []
@@ -269,6 +270,12 @@ function App() {
       setPlan({
         ...data,
         agent_steps: Array.isArray(data?.agent_steps) ? data.agent_steps : [],
+      })
+      setTripContext({
+        destination: form.destination,
+        budget: Number(form.budget),
+        interests: form.interests,
+        travelers: form.travelers,
       })
       const firstDay = Object.keys(data.itinerary ?? {})[0]
       if (firstDay) setActiveDay(firstDay)
@@ -369,7 +376,7 @@ function App() {
 
       <main className="flex-1 min-w-0 overflow-y-auto pt-16 lg:pt-0 relative">
         {currentView === 'chat' ? (
-          <ChatAssistant />
+          <ChatAssistant tripContext={tripContext} />
         ) : (
           <>
         {loading && (

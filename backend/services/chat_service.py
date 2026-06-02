@@ -48,6 +48,26 @@ def _fallback_reply(message: str, trip_context: Optional[dict[str, Any]], reason
     return {"reply": reply, "source": "fallback", "status": "degraded"}
 
 
+def _trip_context_prompt_block(trip_context: dict[str, Any]) -> str:
+    """Human-readable trip summary for the model (dashboard or nested trip_summary)."""
+    summary = trip_context.get("trip_summary")
+    if not isinstance(summary, dict):
+        summary = trip_context
+    lines: list[str] = []
+    for label, key in (
+        ("Destination", "destination"),
+        ("Budget", "budget"),
+        ("Interests", "interests"),
+        ("Travelers", "travelers"),
+    ):
+        value = summary.get(key)
+        if value is not None and value != "":
+            lines.append(f"{label}: {value}")
+    if lines:
+        return "\n".join(lines)
+    return json.dumps(trip_context, default=str)
+
+
 def _call_openai(message: str, trip_context: Optional[dict[str, Any]]) -> str:
     """Invoke OpenAI Chat Completions API; raises on failure."""
     from openai import OpenAI
@@ -60,8 +80,7 @@ def _call_openai(message: str, trip_context: Optional[dict[str, Any]]) -> str:
 
     user_text = message.strip()
     if trip_context:
-        # Give the model structured context without changing the public API contract.
-        user_text += "\n\n---\nTrip context (JSON):\n" + json.dumps(trip_context, default=str)
+        user_text += "\n\n---\nThe user's current trip:\n" + _trip_context_prompt_block(trip_context)
 
     completion = client.chat.completions.create(
         model=OPENAI_MODEL,

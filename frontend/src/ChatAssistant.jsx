@@ -9,7 +9,7 @@ import ReactMarkdown from 'react-markdown'
 /**
  * Local-only chat UI (backend wiring comes later).
  */
-export default function ChatAssistant() {
+export default function ChatAssistant({ tripContext }) {
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
@@ -49,6 +49,7 @@ export default function ChatAssistant() {
         },
         body: JSON.stringify({
           message: text,
+          trip_context: tripContext,
         }),
       })
   
@@ -95,6 +96,23 @@ export default function ChatAssistant() {
       </header>
 
       <div className="flex-1 min-h-0 rounded-2xl border border-slate-200/80 bg-white shadow-sm flex flex-col overflow-hidden">
+        {tripContext && (
+          <div className="shrink-0 border-b border-emerald-100/80 bg-gradient-to-r from-emerald-50/90 to-teal-50/50 px-4 sm:px-5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              Current Trip
+            </p>
+            <p className="text-sm text-slate-700 mt-1 leading-snug">
+              {[
+                tripContext.destination,
+                tripContext.budget != null && `$${Number(tripContext.budget).toLocaleString()}`,
+                tripContext.interests,
+                tripContext.travelers,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+        )}
         <ul className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {messages.map((msg) => (
             <li
