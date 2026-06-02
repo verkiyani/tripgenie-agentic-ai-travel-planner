@@ -17,6 +17,15 @@ class ChatRequest(BaseModel):
     )
 
 
+class AgentTrace(BaseModel):
+    """Specialist agent outputs from chat orchestration (optional for clients)."""
+
+    orchestrator: str
+    activity_agent: str
+    budget_agent: str
+    itinerary_agent: str
+
+
 class ChatResponse(BaseModel):
     """Assistant reply and metadata for the frontend."""
 
@@ -28,4 +37,8 @@ class ChatResponse(BaseModel):
     status: str = Field(
         ...,
         description='e.g. "ok" on success, "degraded" when fallback was used after an error',
+    )
+    agent_trace: Optional[AgentTrace] = Field(
+        default=None,
+        description="Populated when specialist agents ran before the final reply",
     )

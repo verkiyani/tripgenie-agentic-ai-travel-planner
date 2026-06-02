@@ -11,6 +11,8 @@ from typing import Any, Optional
 
 from dotenv import load_dotenv
 
+from services.chat_agents import orchestrator_agent
+
 # Load variables from backend/.env (or project root .env) for local development.
 load_dotenv()
 
@@ -26,7 +28,12 @@ Keep replies concise (under about 200 words unless the user asks for detail).
 Do not invent real booking confirmations or claim you booked anything — planning advice only."""
 
 
-def _fallback_reply(message: str, trip_context: Optional[dict[str, Any]], reason: str) -> dict[str, str]:
+def _fallback_reply(
+    message: str,
+    trip_context: Optional[dict[str, Any]],
+    reason: str,
+    agent_trace: Optional[dict[str, str]] = None,
+) -> dict[str, Any]:
     """
     Deterministic helpful response when OpenAI is unavailable (no key, API error, etc.).
     Still sounds like TripGenie so the UI remains demo-ready.
@@ -45,7 +52,10 @@ def _fallback_reply(message: str, trip_context: Optional[dict[str, Any]], reason
         "Try grouping sights by neighborhood, leaving buffer time between activities, and "
         "checking transit or walking times. Add OPENAI_API_KEY to backend/.env for full AI answers."
     )
-    return {"reply": reply, "source": "fallback", "status": "degraded"}
+    out: dict[str, Any] = {"reply": reply, "source": "fallback", "status": "degraded"}
+    if agent_trace:
+        out["agent_trace"] = agent_trace
+    return out
 
 
 def _trip_context_prompt_block(trip_context: dict[str, Any]) -> str:
@@ -68,7 +78,11 @@ def _trip_context_prompt_block(trip_context: dict[str, Any]) -> str:
     return json.dumps(trip_context, default=str)
 
 
-def _call_openai(message: str, trip_context: Optional[dict[str, Any]]) -> str:
+def _call_openai(
+    message: str,
+    trip_context: Optional[dict[str, Any]],
+    agent_trace: dict[str, str],
+) -> str:
     """Invoke OpenAI Chat Completions API; raises on failure."""
     from openai import OpenAI
 
@@ -81,6 +95,14 @@ def _call_openai(message: str, trip_context: Optional[dict[str, Any]]) -> str:
     user_text = message.strip()
     if trip_context:
         user_text += "\n\n---\nThe user's current trip:\n" + _trip_context_prompt_block(trip_context)
+
+    user_text += (
+        "\n\n---\nSpecialist agent context (use to answer; do not repeat verbatim):\n"
+        f"Orchestrator: {agent_trace['orchestrator']}\n"
+        f"Activity agent: {agent_trace['activity_agent']}\n"
+        f"Budget agent: {agent_trace['budget_agent']}\n"
+        f"Itinerary agent: {agent_trace['itinerary_agent']}"
+    )
 
     completion = client.chat.completions.create(
         model=OPENAI_MODEL,
@@ -98,10 +120,10 @@ def _call_openai(message: str, trip_context: Optional[dict[str, Any]]) -> str:
     return choice.strip()
 
 
-def generate_chat_reply(message: str, trip_context: Optional[dict[str, Any]] = None) -> dict[str, str]:
+def generate_chat_reply(message: str, trip_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     """
     Main entry used by the /api/chat route.
-    Returns dict with keys: reply, source, status.
+    Returns dict with keys: reply, source, status, and optional agent_trace.
     """
     if not message or not message.strip():
         return {
@@ -110,14 +132,21 @@ def generate_chat_reply(message: str, trip_context: Optional[dict[str, Any]] = N
             "status": "ok",
         }
 
+    trace = orchestrator_agent(message, trip_context)
+
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if not api_key:
         logger.info("OPENAI_API_KEY missing; using fallback chat response")
-        return _fallback_reply(message, trip_context, "API key not configured")
+        return _fallback_reply(message, trip_context, "API key not configured", trace)
 
     try:
-        reply_text = _call_openai(message, trip_context)
-        return {"reply": reply_text, "source": "openai", "status": "ok"}
+        reply_text = _call_openai(message, trip_context, trace)
+        return {
+            "reply": reply_text,
+            "source": "openai",
+            "status": "ok",
+            "agent_trace": trace,
+        }
     except Exception as exc:  # noqa: BLE001 — capstone-safe degrade path
         logger.exception("OpenAI chat failed: %s", exc)
-        return _fallback_reply(message, trip_context, "temporary service issue")
+        return _fallback_reply(message, trip_context, "temporary service issue", trace)
