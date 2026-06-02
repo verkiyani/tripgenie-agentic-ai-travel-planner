@@ -3,12 +3,35 @@ import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 
-//const THINKING_REPLY = 'TripGenie is thinking...'
-//const THINKING_DELAY_MS = 900
+function AgentTracePanel({ trace }) {
+  if (!trace || typeof trace !== 'object') return null
 
-/**
- * Local-only chat UI (backend wiring comes later).
- */
+  const rows = [
+    ['Orchestrator', trace.orchestrator],
+    ['Activity Agent', trace.activity_agent],
+    ['Budget Agent', trace.budget_agent],
+    ['Itinerary Agent', trace.itinerary_agent],
+  ].filter(([, value]) => value != null && String(value).trim() !== '')
+
+  if (rows.length === 0) return null
+
+  return (
+    <details className="rounded-xl border border-slate-200/80 bg-white/90 text-xs shadow-sm">
+      <summary className="cursor-pointer list-none px-3 py-2 font-semibold text-slate-600 hover:text-slate-800 [&::-webkit-details-marker]:hidden">
+        Agent Trace
+      </summary>
+      <dl className="px-3 pb-3 pt-1 space-y-2.5 border-t border-slate-100">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt className="font-semibold text-emerald-700">{label}</dt>
+            <dd className="text-slate-600 mt-0.5 leading-relaxed">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  )
+}
+
 export default function ChatAssistant({ tripContext }) {
   const [messages, setMessages] = useState([
     {
@@ -63,6 +86,7 @@ export default function ChatAssistant({ tripContext }) {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         text: data.reply || 'TripGenie could not generate a response.',
+        ...(data.agent_trace ? { agentTrace: data.agent_trace } : {}),
       }
   
       setMessages((prev) => [...prev, assistantMsg])
@@ -132,20 +156,23 @@ export default function ChatAssistant({ tripContext }) {
                   <Bot className="h-4 w-4" />
                 )}
               </div>
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
-                  msg.role === 'user'
-                    ? 'bg-emerald-600 text-white rounded-tr-md'
-                    : 'bg-slate-100 text-slate-800 rounded-tl-md border border-slate-100'
-                }`}
-              >
-                {
-                 msg.role === 'assistant' ? (
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
-                ) : (
-                  msg.text
-                )
-                }
+              <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                    msg.role === 'user'
+                      ? 'bg-emerald-600 text-white rounded-tr-md'
+                      : 'bg-slate-100 text-slate-800 rounded-tl-md border border-slate-100'
+                  }`}
+                >
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  ) : (
+                    msg.text
+                  )}
+                </div>
+                {msg.role === 'assistant' && msg.agentTrace ? (
+                  <AgentTracePanel trace={msg.agentTrace} />
+                ) : null}
               </div>
             </li>
           ))}
