@@ -73,6 +73,14 @@ export default function ChatAssistant({ tripContext }) {
         body: JSON.stringify({
           message: text,
           trip_context: tripContext,
+          conversation_history: messages
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .filter((m) => m.id !== 'welcome')
+            .slice(-6)
+            .map((m) => ({
+              role: m.role,
+              content: m.text,
+            })),
         }),
       })
   

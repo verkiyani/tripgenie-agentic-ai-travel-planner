@@ -10,7 +10,6 @@ import os
 from typing import Any, Optional
 
 from dotenv import load_dotenv
-
 from services.chat_agents import orchestrator_agent
 
 # Load variables from backend/.env (or project root .env) for local development.
@@ -82,6 +81,7 @@ def _call_openai(
     message: str,
     trip_context: Optional[dict[str, Any]],
     agent_trace: dict[str, str],
+    conversation_history: Optional[list[dict[str, str]]] = None,
 ) -> str:
     """Invoke OpenAI Chat Completions API; raises on failure."""
     from openai import OpenAI
@@ -104,15 +104,35 @@ def _call_openai(
         f"Itinerary agent: {agent_trace['itinerary_agent']}"
     )
 
+    
+    messages = [
+    {"role": "system", "content": SYSTEM_PROMPT}
+    ]
+
+    if conversation_history:
+        for item in conversation_history:
+            role = item.get("role")
+            content = item.get("content")
+
+            if role in ["user", "assistant"] and content:
+                messages.append({
+                    "role": role,
+                    "content": content
+                })
+
+    messages.append({
+        "role": "user",
+        "content": user_text
+    })
+
     completion = client.chat.completions.create(
         model=OPENAI_MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_text},
-        ],
+        messages=messages,
         temperature=0.7,
         max_tokens=500,
     )
+    
+    
 
     choice = completion.choices[0].message.content
     if not choice or not choice.strip():
@@ -120,7 +140,11 @@ def _call_openai(
     return choice.strip()
 
 
-def generate_chat_reply(message: str, trip_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+def generate_chat_reply(
+    message: str,
+    trip_context: Optional[dict[str, Any]] = None,
+    conversation_history: Optional[list[dict[str, str]]] = None,
+) -> dict[str, Any]:
     """
     Main entry used by the /api/chat route.
     Returns dict with keys: reply, source, status, and optional agent_trace.
@@ -140,7 +164,12 @@ def generate_chat_reply(message: str, trip_context: Optional[dict[str, Any]] = N
         return _fallback_reply(message, trip_context, "API key not configured", trace)
 
     try:
-        reply_text = _call_openai(message, trip_context, trace)
+        reply_text = _call_openai(
+            message,
+            trip_context,
+            trace,
+            conversation_history,
+         )
         return {
             "reply": reply_text,
             "source": "openai",

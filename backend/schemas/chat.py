@@ -2,7 +2,7 @@
 Pydantic models for POST /api/chat — TripGenie AI travel assistant.
 """
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,10 @@ class ChatRequest(BaseModel):
     trip_context: Optional[dict[str, Any]] = Field(
         default=None,
         description="Optional trip_summary, itinerary, budget, etc. from a generated plan",
+    )
+    conversation_history: Optional[List[Dict[str, str]]] = Field(
+    default=None,
+    description="Recent chat history for conversational memory",
     )
 
 
