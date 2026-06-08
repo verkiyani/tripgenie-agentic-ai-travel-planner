@@ -11,6 +11,8 @@ function AgentTracePanel({ trace }) {
     ['Activity Agent', trace.activity_agent],
     ['Budget Agent', trace.budget_agent],
     ['Itinerary Agent', trace.itinerary_agent],
+    ['Hotel Agent', trace.hotel_agent],
+    ['Flight Agent', trace.flight_agent],
   ].filter(([, value]) => value != null && String(value).trim() !== '')
 
   if (rows.length === 0) return null

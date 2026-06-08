@@ -28,6 +28,8 @@ class AgentTrace(BaseModel):
     activity_agent: str
     budget_agent: str
     itinerary_agent: str
+    hotel_agent: str
+    flight_agent: str
 
 
 class ChatResponse(BaseModel):

@@ -101,7 +101,9 @@ def _call_openai(
         f"Orchestrator: {agent_trace['orchestrator']}\n"
         f"Activity agent: {agent_trace['activity_agent']}\n"
         f"Budget agent: {agent_trace['budget_agent']}\n"
-        f"Itinerary agent: {agent_trace['itinerary_agent']}"
+        f"Itinerary agent: {agent_trace['itinerary_agent']}\n"
+        f"Hotel agent: {agent_trace['hotel_agent']}\n"
+        f"Flight agent: {agent_trace['flight_agent']}"
     )
 
     

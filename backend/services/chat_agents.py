@@ -64,6 +64,53 @@ def budget_agent(trip_context: Optional[dict[str, Any]]) -> str:
     )
 
 
+def hotel_agent(message: str, trip_context: Optional[dict[str, Any]]) -> str:
+    """Accommodation planning: area, budget fit, traveler needs (advice only)."""
+    fields = _trip_fields(trip_context)
+    destination = fields.get("destination") or "the destination"
+    travelers = fields.get("travelers") or "travelers"
+    msg = (message or "").lower()
+
+    area_hint = "central or transit-friendly neighborhoods near main sights"
+    if any(w in msg for w in ("quiet", "boutique", "luxury", "hostel", "airbnb")):
+        area_hint = "match lodging style to what the user mentioned (comfort vs budget)"
+
+    try:
+        budget = float(fields.get("budget"))
+        nightly = max(80, int((budget * 0.4) / 3))
+        price_note = f"price-sensitive: aim near ~${nightly}/night lodging share of total budget"
+    except (TypeError, ValueError):
+        price_note = "price sensitivity unknown; suggest mid-range options with clear cancellation terms"
+
+    return (
+        f"Hotel planning for {destination} ({travelers}): prefer {area_hint}; {price_note}. "
+        "Fit room type and beds to party size; planning advice only — no bookings claimed."
+    )
+
+
+def flight_agent(message: str, trip_context: Optional[dict[str, Any]]) -> str:
+    """Flight and long-haul transport planning: timing, cost, constraints (advice only)."""
+    fields = _trip_fields(trip_context)
+    destination = fields.get("destination") or "the destination"
+    msg = (message or "").lower()
+
+    timing = "allow buffer on arrival day; avoid tight same-day activity stacks after landing"
+    if any(w in msg for w in ("early", "red-eye", "late", "morning")):
+        timing = "align flight times with user timing preferences and jet-lag recovery"
+
+    try:
+        budget = float(fields.get("budget"))
+        flight_share = int(budget * 0.25)
+        cost_note = f"rough flight/major transport cap ~${flight_share:,} within stated budget if applicable"
+    except (TypeError, ValueError):
+        cost_note = "compare fare windows and baggage fees; keep transport flexible until budget is set"
+
+    return (
+        f"Flight/transport note for {destination}: {timing}; {cost_note}. "
+        "Check airport transfers and local transit; planning only — no tickets or bookings claimed."
+    )
+
+
 def itinerary_agent(message: str, trip_context: Optional[dict[str, Any]]) -> str:
     """Day-level pacing and sequencing hints from the question and trip context."""
     fields = _trip_fields(trip_context)
@@ -88,10 +135,12 @@ def orchestrator_agent(
     activity_out = activity_agent(message, trip_context)
     budget_out = budget_agent(trip_context)
     itinerary_out = itinerary_agent(message, trip_context)
+    hotel_out = hotel_agent(message, trip_context)
+    flight_out = flight_agent(message, trip_context)
 
     orchestrator_summary = (
         "Orchestrator merged specialist outputs: "
-        "activity (interests & question), budget (caps & buffer), itinerary (day pacing)."
+        "activity, budget, itinerary, hotel (lodging fit), flight (timing & transport cost)."
     )
 
     return {
@@ -99,4 +148,6 @@ def orchestrator_agent(
         "activity_agent": activity_out,
         "budget_agent": budget_out,
         "itinerary_agent": itinerary_out,
+        "hotel_agent": hotel_out,
+        "flight_agent": flight_out,
     }
