@@ -86,6 +86,54 @@ const INITIAL_PLAN = {
   agent_steps: [],
 }
 
+/** Dashboard Agent Activity — mirrors chat orchestration (display only; not from API agent_steps). */
+function buildDashboardAgentSteps(plan) {
+  const summary = plan?.trip_summary ?? {}
+  const itinerary = plan?.itinerary ?? {}
+  const budgetData = plan?.budget_breakdown ?? {}
+
+  if (!summary.destination) return []
+
+  const destination = summary.destination
+  const interests = summary.interests ?? 'your interests'
+  const travelers = summary.travelers ?? 'travelers'
+  const dayCount = Object.keys(itinerary).length
+  const budget = budgetData.budget ?? summary.budget
+  const totalCost = budgetData.total_cost
+  const remaining = budgetData.remaining
+
+  const step = (agent, message) => ({ agent, status: 'completed', message })
+
+  let budgetMessage = 'Estimated budget fit and cost buffer.'
+  if (budget != null && totalCost != null) {
+    const rem =
+      remaining != null ? Math.round(Number(remaining)) : Math.round(Number(budget) - Number(totalCost))
+    budgetMessage = `Estimated budget fit and cost buffer ($${Math.round(Number(totalCost))} of $${Math.round(Number(budget))}; ~$${rem} remaining).`
+  }
+
+  let itineraryMessage = 'Built day-by-day itinerary structure.'
+  if (dayCount > 0) {
+    itineraryMessage = `Built day-by-day itinerary structure (${dayCount} days).`
+  }
+
+  return [
+    step(
+      'Orchestrator Agent',
+      'Received trip preferences and coordinated specialist agents.',
+    ),
+    step(
+      'Destination Agent',
+      `Validated destination and travel context (${destination}; ${travelers}).`,
+    ),
+    step('Activity Agent', `Matched activities to user interests (${interests}).`),
+    step('Hotel Agent', 'Suggested accommodation planning considerations.'),
+    step('Flight Agent', 'Evaluated flight or transportation planning constraints.'),
+    step('Budget Agent', budgetMessage),
+    step('Itinerary Agent', itineraryMessage),
+    step('Orchestrator Agent', 'Final trip plan ready.'),
+  ]
+}
+
 /** Single simulated booking block from API mock_confirmations */
 function BookingBlock({ title, icon: Icon, booking }) {
   if (!booking) return null
@@ -237,10 +285,7 @@ function App() {
 
   const days = useMemo(() => Object.keys(plan.itinerary ?? {}), [plan])
   const timeline = plan.itinerary?.[activeDay] ?? []
-  const agentSteps = useMemo(() => {
-    const steps = plan?.agent_steps
-    return Array.isArray(steps) ? steps : []
-  }, [plan])
+  const agentSteps = useMemo(() => buildDashboardAgentSteps(plan), [plan])
 
   const summary = plan.trip_summary ?? {}
   const budgetData = plan.budget_breakdown ?? {}
